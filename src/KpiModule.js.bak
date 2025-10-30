@@ -1,0 +1,979 @@
+import React, { useState } from 'react';
+import { 
+  Tabs, Tab, Box, Typography, Paper, Table, TableBody, TableCell, 
+  TableContainer, TableHead, TableRow, Select, MenuItem, FormControl, 
+  InputLabel, Grid, Card, CardContent, Divider, useTheme
+} from '@mui/material';
+import { 
+  ArrowUpward, ArrowDownward, TrendingFlat,
+  Timeline, BarChart, PieChart, ShowChart
+} from '@mui/icons-material';
+import { Chart as ChartJS, BarElement, CategoryScale, LinearScale, Tooltip, Legend, ArcElement, LineElement, PointElement } from 'chart.js';
+import { Bar, Pie, Line } from 'react-chartjs-2';
+
+// Register ChartJS components
+ChartJS.register(
+  BarElement, CategoryScale, LinearScale, 
+  Tooltip, Legend, ArcElement, LineElement, PointElement
+);
+
+// Uganda NDA Theme Colors
+const ndaColors = {
+  primary: '#FFCD00', // Yellow
+  secondary: '#002F6C', // Dark Blue
+  accent: '#000000', // Black
+  background: '#F5F5F5',
+  success: '#4CAF50',
+  warning: '#FFC107',
+  error: '#F44336'
+};
+
+// KPI Name Mapping
+const kpiNameMap = {
+  // Marketing Authorization KPIs
+  'pct_new_apps_evaluated_on_time': 'New Apps Evaluated On Time',
+  'pct_renewal_apps_evaluated_on_time': 'Renewal Apps Evaluated On Time', 
+  'pct_variation_apps_evaluated_on_time': 'Variation Apps Evaluated On Time',
+  'pct_fir_responses_on_time': 'FIR Responses On Time',
+  'pct_query_responses_evaluated_on_time': 'Query Responses Evaluated On Time',
+  'pct_granted_within_90_days': 'Granted Within 90 Days',
+  'median_duration_continental': 'Median Duration (Continental)',
+  // Clinical Trials KPIs
+  'pct_new_apps_evaluated_on_time_ct': 'New CT Apps Evaluated On Time',
+  'pct_amendment_apps_evaluated_on_time': 'Amendment Apps Evaluated On Time',
+  'pct_gcp_inspections_on_time': 'GCP Inspections On Time',
+  'pct_safety_reports_assessed_on_time': 'Safety Reports Assessed On Time',
+  'pct_gcp_compliant': 'GCP Compliant',
+  'pct_registry_submissions_on_time': 'Registry Submissions On Time',
+  'pct_capa_evaluated_on_time': 'CAPA Evaluated On Time',
+  'avg_turnaround_time': 'Avg Turnaround Time (Days)',
+  // GMP Compliance KPIs
+  'pct_facilities_inspected_on_time': 'Facilities Inspected On Time',
+  'pct_complaint_inspections_on_time': 'Complaint Inspections On Time',
+  'pct_inspections_waived_on_time': 'Inspections Waived On Time',
+  'pct_facilities_compliant': 'Facilities Compliant',
+  'pct_capa_decisions_on_time': 'CAPA Decisions On Time',
+  'pct_applications_completed_on_time': 'Applications Completed On Time',
+  'avg_turnaround_time_gmp': 'Avg Turnaround Time (GMP)',
+  'median_turnaround_time': 'Median Turnaround Time',
+  'pct_reports_published_on_time': 'Reports Published On Time'
+};
+
+// Quarterly data structure
+const quarterlyData = {
+  MA: {
+    pct_new_apps_evaluated_on_time: {
+      baseline: 65,
+      target: 90,
+      data: [
+        { quarter: 'Q1 2023', value: 68 },
+        { quarter: 'Q2 2023', value: 72 },
+        { quarter: 'Q3 2023', value: 70 },
+        { quarter: 'Q4 2023', value: 75 },
+        { quarter: 'Q1 2024', value: 76 },
+        { quarter: 'Q2 2024', value: 78 },
+        { quarter: 'Q3 2024', value: 80 },
+        { quarter: 'Q4 2024', value: 82 },
+        { quarter: 'Q1 2025', value: 83 },
+        { quarter: 'Q2 2025', value: 85 },
+      ]
+    },
+    pct_renewal_apps_evaluated_on_time: {
+      baseline: 70,
+      target: 95,
+      data: [
+        { quarter: 'Q1 2023', value: 72 },
+        { quarter: 'Q2 2023', value: 75 },
+        { quarter: 'Q3 2023', value: 78 },
+        { quarter: 'Q4 2023', value: 80 },
+        { quarter: 'Q1 2024', value: 82 },
+        { quarter: 'Q2 2024', value: 83 },
+        { quarter: 'Q3 2024', value: 85 },
+        { quarter: 'Q4 2024', value: 86 },
+        { quarter: 'Q1 2025', value: 87 },
+        { quarter: 'Q2 2025', value: 88 },
+      ]
+    },
+    pct_variation_apps_evaluated_on_time: {
+      baseline: 60,
+      target: 85,
+      data: [
+        { quarter: 'Q1 2023', value: 62 },
+        { quarter: 'Q2 2023', value: 65 },
+        { quarter: 'Q3 2023', value: 63 },
+        { quarter: 'Q4 2023', value: 68 },
+        { quarter: 'Q1 2024', value: 70 },
+        { quarter: 'Q2 2024', value: 72 },
+        { quarter: 'Q3 2024', value: 73 },
+        { quarter: 'Q4 2024', value: 74 },
+        { quarter: 'Q1 2025', value: 75 },
+        { quarter: 'Q2 2025', value: 76 },
+      ]
+    },
+    pct_fir_responses_on_time: {
+      baseline: 55,
+      target: 75,
+      data: [
+        { quarter: 'Q1 2023', value: 58 },
+        { quarter: 'Q2 2023', value: 60 },
+        { quarter: 'Q3 2023', value: 62 },
+        { quarter: 'Q4 2023', value: 63 },
+        { quarter: 'Q1 2024', value: 64 },
+        { quarter: 'Q2 2024', value: 65 },
+        { quarter: 'Q3 2024', value: 66 },
+        { quarter: 'Q4 2024', value: 67 },
+        { quarter: 'Q1 2025', value: 68 },
+        { quarter: 'Q2 2025', value: 69 },
+      ]
+    },
+    pct_query_responses_evaluated_on_time: {
+      baseline: 80,
+      target: 90,
+      data: [
+        { quarter: 'Q1 2023', value: 82 },
+        { quarter: 'Q2 2023', value: 84 },
+        { quarter: 'Q3 2023', value: 85 },
+        { quarter: 'Q4 2023', value: 86 },
+        { quarter: 'Q1 2024', value: 87 },
+        { quarter: 'Q2 2024', value: 88 },
+        { quarter: 'Q3 2024', value: 88 },
+        { quarter: 'Q4 2024', value: 89 },
+        { quarter: 'Q1 2025', value: 89 },
+        { quarter: 'Q2 2025', value: 90 },
+      ]
+    },
+    pct_granted_within_90_days: {
+      baseline: 40,
+      target: 60,
+      data: [
+        { quarter: 'Q1 2023', value: 42 },
+        { quarter: 'Q2 2023', value: 43 },
+        { quarter: 'Q3 2023', value: 44 },
+        { quarter: 'Q4 2023', value: 45 },
+        { quarter: 'Q1 2024', value: 46 },
+        { quarter: 'Q2 2024', value: 47 },
+        { quarter: 'Q3 2024', value: 48 },
+        { quarter: 'Q4 2024', value: 49 },
+        { quarter: 'Q1 2025', value: 50 },
+        { quarter: 'Q2 2025', value: 51 },
+      ]
+    },
+    median_duration_continental: {
+      baseline: 120,
+      target: 90,
+      data: [
+        { quarter: 'Q1 2023', value: 118 },
+        { quarter: 'Q2 2023', value: 116 },
+        { quarter: 'Q3 2023', value: 115 },
+        { quarter: 'Q4 2023', value: 114 },
+        { quarter: 'Q1 2024', value: 113 },
+        { quarter: 'Q2 2024', value: 112 },
+        { quarter: 'Q3 2024', value: 111 },
+        { quarter: 'Q4 2024', value: 110 },
+        { quarter: 'Q1 2025', value: 109 },
+        { quarter: 'Q2 2025', value: 108 },
+      ]
+    }
+  },
+  CT: {
+    pct_new_apps_evaluated_on_time_ct: {
+      baseline: 75,
+      target: 85,
+      data: [
+        { quarter: 'Q1 2023', value: 76 },
+        { quarter: 'Q2 2023', value: 77 },
+        { quarter: 'Q3 2023', value: 78 },
+        { quarter: 'Q4 2023', value: 79 },
+        { quarter: 'Q1 2024', value: 80 },
+        { quarter: 'Q2 2024', value: 81 },
+        { quarter: 'Q3 2024', value: 82 },
+        { quarter: 'Q4 2024', value: 83 },
+        { quarter: 'Q1 2025', value: 84 },
+        { quarter: 'Q2 2025', value: 85 },
+      ]
+    },
+    pct_amendment_apps_evaluated_on_time: {
+      baseline: 70,
+      target: 80,
+      data: [
+        { quarter: 'Q1 2023', value: 72 },
+        { quarter: 'Q2 2023', value: 73 },
+        { quarter: 'Q3 2023', value: 74 },
+        { quarter: 'Q4 2023', value: 75 },
+        { quarter: 'Q1 2024', value: 76 },
+        { quarter: 'Q2 2024', value: 77 },
+        { quarter: 'Q3 2024', value: 78 },
+        { quarter: 'Q4 2024', value: 79 },
+        { quarter: 'Q1 2025', value: 80 },
+        { quarter: 'Q2 2025', value: 81 },
+      ]
+    },
+    pct_gcp_inspections_on_time: {
+      baseline: 60,
+      target: 75,
+      data: [
+        { quarter: 'Q1 2023', value: 62 },
+        { quarter: 'Q2 2023', value: 63 },
+        { quarter: 'Q3 2023', value: 64 },
+        { quarter: 'Q4 2023', value: 65 },
+        { quarter: 'Q1 2024', value: 66 },
+        { quarter: 'Q2 2024', value: 67 },
+        { quarter: 'Q3 2024', value: 68 },
+        { quarter: 'Q4 2024', value: 69 },
+        { quarter: 'Q1 2025', value: 70 },
+        { quarter: 'Q2 2025', value: 71 },
+      ]
+    },
+    pct_safety_reports_assessed_on_time: {
+      baseline: 85,
+      target: 95,
+      data: [
+        { quarter: 'Q1 2023', value: 86 },
+        { quarter: 'Q2 2023', value: 87 },
+        { quarter: 'Q3 2023', value: 88 },
+        { quarter: 'Q4 2023', value: 89 },
+        { quarter: 'Q1 2024', value: 90 },
+        { quarter: 'Q2 2024', value: 91 },
+        { quarter: 'Q3 2024', value: 92 },
+        { quarter: 'Q4 2024', value: 93 },
+        { quarter: 'Q1 2025', value: 94 },
+        { quarter: 'Q2 2025', value: 95 },
+      ]
+    },
+    pct_gcp_compliant: {
+      baseline: 80,
+      target: 90,
+      data: [
+        { quarter: 'Q1 2023', value: 82 },
+        { quarter: 'Q2 2023', value: 83 },
+        { quarter: 'Q3 2023', value: 84 },
+        { quarter: 'Q4 2023', value: 85 },
+        { quarter: 'Q1 2024', value: 86 },
+        { quarter: 'Q2 2024', value: 87 },
+        { quarter: 'Q3 2024', value: 88 },
+        { quarter: 'Q4 2024', value: 89 },
+        { quarter: 'Q1 2025', value: 90 },
+        { quarter: 'Q2 2025', value: 91 },
+      ]
+    },
+    pct_registry_submissions_on_time: {
+      baseline: 90,
+      target: 100,
+      data: [
+        { quarter: 'Q1 2023', value: 91 },
+        { quarter: 'Q2 2023', value: 92 },
+        { quarter: 'Q3 2023', value: 93 },
+        { quarter: 'Q4 2023', value: 94 },
+        { quarter: 'Q1 2024', value: 95 },
+        { quarter: 'Q2 2024', value: 96 },
+        { quarter: 'Q3 2024', value: 97 },
+        { quarter: 'Q4 2024', value: 98 },
+        { quarter: 'Q1 2025', value: 99 },
+        { quarter: 'Q2 2025', value: 100 },
+      ]
+    },
+    pct_capa_evaluated_on_time: {
+      baseline: 65,
+      target: 80,
+      data: [
+        { quarter: 'Q1 2023', value: 67 },
+        { quarter: 'Q2 2023', value: 68 },
+        { quarter: 'Q3 2023', value: 69 },
+        { quarter: 'Q4 2023', value: 70 },
+        { quarter: 'Q1 2024', value: 71 },
+        { quarter: 'Q2 2024', value: 72 },
+        { quarter: 'Q3 2024', value: 73 },
+        { quarter: 'Q4 2024', value: 74 },
+        { quarter: 'Q1 2025', value: 75 },
+        { quarter: 'Q2 2025', value: 76 },
+      ]
+    },
+    avg_turnaround_time: {
+      baseline: 50,
+      target: 30,
+      data: [
+        { quarter: 'Q1 2023', value: 48 },
+        { quarter: 'Q2 2023', value: 46 },
+        { quarter: 'Q3 2023', value: 44 },
+        { quarter: 'Q4 2023', value: 42 },
+        { quarter: 'Q1 2024', value: 40 },
+        { quarter: 'Q2 2024', value: 38 },
+        { quarter: 'Q3 2024', value: 36 },
+        { quarter: 'Q4 2024', value: 34 },
+        { quarter: 'Q1 2025', value: 32 },
+        { quarter: 'Q2 2025', value: 30 },
+      ]
+    }
+  },
+  GMP: {
+    pct_facilities_inspected_on_time: {
+      baseline: 70,
+      target: 85,
+      data: [
+        { quarter: 'Q1 2023', value: 71 },
+        { quarter: 'Q2 2023', value: 72 },
+        { quarter: 'Q3 2023', value: 73 },
+        { quarter: 'Q4 2023', value: 74 },
+        { quarter: 'Q1 2024', value: 75 },
+        { quarter: 'Q2 2024', value: 76 },
+        { quarter: 'Q3 2024', value: 77 },
+        { quarter: 'Q4 2024', value: 78 },
+        { quarter: 'Q1 2025', value: 79 },
+        { quarter: 'Q2 2025', value: 80 },
+      ]
+    },
+    pct_complaint_inspections_on_time: {
+      baseline: 60,
+      target: 75,
+      data: [
+        { quarter: 'Q1 2023', value: 62 },
+        { quarter: 'Q2 2023', value: 63 },
+        { quarter: 'Q3 2023', value: 64 },
+        { quarter: 'Q4 2023', value: 65 },
+        { quarter: 'Q1 2024', value: 66 },
+        { quarter: 'Q2 2024', value: 67 },
+        { quarter: 'Q3 2024', value: 68 },
+        { quarter: 'Q4 2024', value: 69 },
+        { quarter: 'Q1 2025', value: 70 },
+        { quarter: 'Q2 2025', value: 71 },
+      ]
+    },
+    pct_inspections_waived_on_time: {
+      baseline: 85,
+      target: 95,
+      data: [
+        { quarter: 'Q1 2023', value: 86 },
+        { quarter: 'Q2 2023', value: 87 },
+        { quarter: 'Q3 2023', value: 88 },
+        { quarter: 'Q4 2023', value: 89 },
+        { quarter: 'Q1 2024', value: 90 },
+        { quarter: 'Q2 2024', value: 91 },
+        { quarter: 'Q3 2024', value: 92 },
+        { quarter: 'Q4 2024', value: 93 },
+        { quarter: 'Q1 2025', value: 94 },
+        { quarter: 'Q2 2025', value: 95 },
+      ]
+    },
+    pct_facilities_compliant: {
+      baseline: 75,
+      target: 85,
+      data: [
+        { quarter: 'Q1 2023', value: 76 },
+        { quarter: 'Q2 2023', value: 77 },
+        { quarter: 'Q3 2023', value: 78 },
+        { quarter: 'Q4 2023', value: 79 },
+        { quarter: 'Q1 2024', value: 80 },
+        { quarter: 'Q2 2024', value: 81 },
+        { quarter: 'Q3 2024', value: 82 },
+        { quarter: 'Q4 2024', value: 83 },
+        { quarter: 'Q1 2025', value: 84 },
+        { quarter: 'Q2 2025', value: 85 },
+      ]
+    },
+    pct_capa_decisions_on_time: {
+      baseline: 70,
+      target: 80,
+      data: [
+        { quarter: 'Q1 2023', value: 72 },
+        { quarter: 'Q2 2023', value: 73 },
+        { quarter: 'Q3 2023', value: 74 },
+        { quarter: 'Q4 2023', value: 75 },
+        { quarter: 'Q1 2024', value: 76 },
+        { quarter: 'Q2 2024', value: 77 },
+        { quarter: 'Q3 2024', value: 78 },
+        { quarter: 'Q4 2024', value: 79 },
+        { quarter: 'Q1 2025', value: 80 },
+        { quarter: 'Q2 2025', value: 81 },
+      ]
+    },
+    pct_applications_completed_on_time: {
+      baseline: 80,
+      target: 90,
+      data: [
+        { quarter: 'Q1 2023', value: 81 },
+        { quarter: 'Q2 2023', value: 82 },
+        { quarter: 'Q3 2023', value: 83 },
+        { quarter: 'Q4 2023', value: 84 },
+        { quarter: 'Q1 2024', value: 85 },
+        { quarter: 'Q2 2024', value: 86 },
+        { quarter: 'Q3 2024', value: 87 },
+        { quarter: 'Q4 2024', value: 88 },
+        { quarter: 'Q1 2025', value: 89 },
+        { quarter: 'Q2 2025', value: 90 },
+      ]
+    },
+    avg_turnaround_time_gmp: {
+      baseline: 70,
+      target: 45,
+      data: [
+        { quarter: 'Q1 2023', value: 68 },
+        { quarter: 'Q2 2023', value: 66 },
+        { quarter: 'Q3 2023', value: 64 },
+        { quarter: 'Q4 2023', value: 62 },
+        { quarter: 'Q1 2024', value: 60 },
+        { quarter: 'Q2 2024', value: 58 },
+        { quarter: 'Q3 2024', value: 56 },
+        { quarter: 'Q4 2024', value: 54 },
+        { quarter: 'Q1 2025', value: 52 },
+        { quarter: 'Q2 2025', value: 50 },
+      ]
+    },
+    median_turnaround_time: {
+      baseline: 65,
+      target: 40,
+      data: [
+        { quarter: 'Q1 2023', value: 63 },
+        { quarter: 'Q2 2023', value: 61 },
+        { quarter: 'Q3 2023', value: 59 },
+        { quarter: 'Q4 2023', value: 57 },
+        { quarter: 'Q1 2024', value: 55 },
+        { quarter: 'Q2 2024', value: 53 },
+        { quarter: 'Q3 2024', value: 51 },
+        { quarter: 'Q4 2024', value: 49 },
+        { quarter: 'Q1 2025', value: 47 },
+        { quarter: 'Q2 2025', value: 45 },
+      ]
+    },
+    pct_reports_published_on_time: {
+      baseline: 65,
+      target: 80,
+      data: [
+        { quarter: 'Q1 2023', value: 67 },
+        { quarter: 'Q2 2023', value: 68 },
+        { quarter: 'Q3 2023', value: 69 },
+        { quarter: 'Q4 2023', value: 70 },
+        { quarter: 'Q1 2024', value: 71 },
+        { quarter: 'Q2 2024', value: 72 },
+        { quarter: 'Q3 2024', value: 73 },
+        { quarter: 'Q4 2024', value: 74 },
+        { quarter: 'Q1 2025', value: 75 },
+        { quarter: 'Q2 2025', value: 76 },
+      ]
+    }
+  }
+};
+
+// Process step timing data for bottleneck analysis
+const processStepData = {
+  MA: [
+    { step: 'Application Received', avgDays: 1, targetDays: 1 },
+    { step: 'Preliminary Screening', avgDays: 5, targetDays: 3 },
+    { step: 'Technical Dossier Review', avgDays: 45, targetDays: 30 },
+    { step: 'Quality Review', avgDays: 30, targetDays: 25 },
+    { step: 'Safety & Efficacy Review', avgDays: 40, targetDays: 35 },
+    { step: 'Queries to Applicant', avgDays: 3, targetDays: 2 },
+    { step: 'Applicant Response Review', avgDays: 20, targetDays: 15 },
+    { step: 'Decision Issued', avgDays: 5, targetDays: 3 },
+    { step: 'License Publication', avgDays: 3, targetDays: 2 },
+  ],
+  CT: [
+    { step: 'Application Received', avgDays: 1, targetDays: 1 },
+    { step: 'Administrative Screening', avgDays: 5, targetDays: 3 },
+    { step: 'Ethics Review', avgDays: 30, targetDays: 25 },
+    { step: 'Technical Review', avgDays: 35, targetDays: 30 },
+    { step: 'GCP Inspection', avgDays: 45, targetDays: 40 },
+    { step: 'Queries to Applicant', avgDays: 3, targetDays: 2 },
+    { step: 'Applicant Response Review', avgDays: 15, targetDays: 10 },
+    { step: 'Decision Issued', avgDays: 5, targetDays: 3 },
+    { step: 'Trial Registration', avgDays: 2, targetDays: 1 },
+  ],
+  GMP: [
+    { step: 'Application Received', avgDays: 1, targetDays: 1 },
+    { step: 'Application Screening', avgDays: 3, targetDays: 2 },
+    { step: 'Inspection Planning', avgDays: 15, targetDays: 10 },
+    { step: 'Inspection Conducted', avgDays: 5, targetDays: 5 },
+    { step: 'Inspection Report Drafted', avgDays: 10, targetDays: 7 },
+    { step: 'CAPA Requested', avgDays: 3, targetDays: 2 },
+    { step: 'CAPA Review', avgDays: 20, targetDays: 15 },
+    { step: 'Final Decision Issued', avgDays: 5, targetDays: 3 },
+    { step: 'Report Publication', avgDays: 7, targetDays: 5 },
+  ]
+};
+
+const KpiModule = () => {
+  const [activeTab, setActiveTab] = useState('MA');
+  const [selectedKpi, setSelectedKpi] = useState(null);
+  const [breakdownView, setBreakdownView] = useState(false);
+  const theme = useTheme();
+
+  const handleTabChange = (event, newValue) => {
+    setActiveTab(newValue);
+    setSelectedKpi(null);
+    setBreakdownView(false);
+  };
+
+  const handleKpiSelect = (kpiId) => {
+    setSelectedKpi(kpiId);
+    setBreakdownView(false);
+  };
+
+  const renderTrendIcon = (data) => {
+    if (data.length < 2) return <TrendingFlat color="warning" fontSize="small" />;
+    
+    const lastValue = data[data.length - 1].value;
+    const prevValue = data[data.length - 2].value;
+    const baseline = quarterlyData[activeTab][selectedKpi]?.baseline || 0;
+    
+    if (lastValue > prevValue && lastValue > baseline) {
+      return <ArrowUpward color="success" fontSize="small" />;
+    } else if (lastValue < prevValue && lastValue < baseline) {
+      return <ArrowDownward color="error" fontSize="small" />;
+    } else {
+      return <TrendingFlat color="warning" fontSize="small" />;
+    }
+  };
+
+  const getCurrentValue = (kpiId) => {
+    const data = quarterlyData[activeTab][kpiId]?.data || [];
+    return data.length > 0 ? data[data.length - 1].value : 0;
+  };
+
+  const getTrend = (kpiId) => {
+    const data = quarterlyData[activeTab][kpiId]?.data || [];
+    if (data.length < 2) return 'stable';
+    
+    const lastValue = data[data.length - 1].value;
+    const prevValue = data[data.length - 2].value;
+    
+    if (lastValue > prevValue) return 'up';
+    if (lastValue < prevValue) return 'down';
+    return 'stable';
+  };
+
+  const renderKpiCard = (kpiId) => {
+    const kpiData = quarterlyData[activeTab][kpiId];
+    if (!kpiData) return null;
+    
+    const currentValue = getCurrentValue(kpiId);
+    const isPercentage = kpiId.startsWith('pct_');
+    const valueDisplay = isPercentage ? `${currentValue}%` : currentValue;
+    const targetDisplay = isPercentage ? `${kpiData.target}%` : kpiData.target;
+    const isOnTarget = currentValue >= kpiData.target;
+    const trend = getTrend(kpiId);
+
+    return (
+      <Card 
+        key={kpiId}
+        onClick={() => handleKpiSelect(kpiId)}
+        sx={{
+          minWidth: 220,
+          cursor: 'pointer',
+          borderLeft: `4px solid ${isOnTarget ? ndaColors.success : ndaColors.error}`,
+          boxShadow: selectedKpi === kpiId ? 4 : 2,
+          transition: 'all 0.3s ease',
+          '&:hover': {
+            transform: 'translateY(-2px)',
+            boxShadow: 6,
+          }
+        }}
+      >
+        <CardContent>
+          <Typography variant="subtitle2" gutterBottom sx={{ fontWeight: 'bold' }}>
+            {kpiNameMap[kpiId] || kpiId}
+          </Typography>
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <Typography variant="h5" component="div" sx={{ fontWeight: 'bold' }}>
+              {valueDisplay}
+            </Typography>
+            {renderTrendIcon(kpiData.data)}
+          </Box>
+          <Typography variant="caption" color="text.secondary">
+            Target: {targetDisplay}
+          </Typography>
+          <Typography variant="caption" display="block" sx={{ mt: 1, color: ndaColors.primary }}>
+            Click for details
+          </Typography>
+        </CardContent>
+      </Card>
+    );
+  };
+
+  const renderTimeSeriesChart = () => {
+    if (!selectedKpi) return null;
+    
+    const kpiData = quarterlyData[activeTab][selectedKpi];
+    if (!kpiData) return null;
+    
+    const chartData = {
+      labels: kpiData.data.map(item => item.quarter),
+      datasets: [
+        {
+          label: 'Actual Performance',
+          data: kpiData.data.map(item => item.value),
+          borderColor: ndaColors.primary,
+          backgroundColor: ndaColors.primary + '40',
+          tension: 0.3,
+          fill: true
+        },
+        {
+          label: 'Target',
+          data: kpiData.data.map(() => kpiData.target),
+          borderColor: ndaColors.secondary,
+          backgroundColor: 'transparent',
+          borderDash: [5, 5],
+          borderWidth: 1
+        },
+        {
+          label: 'Baseline',
+          data: kpiData.data.map(() => kpiData.baseline),
+          borderColor: ndaColors.accent,
+          backgroundColor: 'transparent',
+          borderDash: [2, 2],
+          borderWidth: 1
+        }
+      ]
+    };
+
+    return (
+      <Card sx={{ p: 2, mb: 3 }}>
+        <Typography variant="h6" gutterBottom>
+          Quarterly Trend: {kpiNameMap[selectedKpi] || selectedKpi}
+        </Typography>
+        <Box sx={{ height: 400 }}>
+          <Line
+            data={chartData}
+            options={{
+              responsive: true,
+              maintainAspectRatio: false,
+              scales: {
+                y: {
+                  beginAtZero: true,
+                  max: selectedKpi.startsWith('pct_') ? 100 : undefined
+                }
+              }
+            }}
+          />
+        </Box>
+      </Card>
+    );
+  };
+
+  const renderKpiDetails = () => {
+    if (!selectedKpi) return null;
+    
+    const kpiData = quarterlyData[activeTab][selectedKpi];
+    if (!kpiData) return null;
+    
+    const currentValue = getCurrentValue(selectedKpi);
+    const isPercentage = selectedKpi.startsWith('pct_');
+    const valueDisplay = isPercentage ? `${currentValue}%` : currentValue;
+    const targetDisplay = isPercentage ? `${kpiData.target}%` : kpiData.target;
+    const baselineDisplay = isPercentage ? `${kpiData.baseline}%` : kpiData.baseline;
+    const trend = getTrend(selectedKpi);
+
+    return (
+      <Card sx={{ p: 3, mb: 3 }}>
+        <Typography variant="h5" gutterBottom sx={{ color: ndaColors.secondary }}>
+          {kpiNameMap[selectedKpi] || selectedKpi}
+        </Typography>
+        
+        <Grid container spacing={2}>
+          <Grid item xs={12} md={3}>
+            <Card sx={{ p: 2, bgcolor: ndaColors.primary + '20' }}>
+              <Typography variant="subtitle1">Current Value</Typography>
+              <Typography variant="h4" sx={{ fontWeight: 'bold' }}>
+                {valueDisplay}
+              </Typography>
+              <Typography variant="caption" display="block">
+                Latest: {kpiData.data[kpiData.data.length - 1].quarter}
+              </Typography>
+            </Card>
+          </Grid>
+          <Grid item xs={12} md={3}>
+            <Card sx={{ p: 2, bgcolor: ndaColors.secondary + '20' }}>
+              <Typography variant="subtitle1">Target Value</Typography>
+              <Typography variant="h4" sx={{ fontWeight: 'bold' }}>
+                {targetDisplay}
+              </Typography>
+            </Card>
+          </Grid>
+          <Grid item xs={12} md={3}>
+            <Card sx={{ p: 2, bgcolor: ndaColors.accent + '20' }}>
+              <Typography variant="subtitle1">Baseline</Typography>
+              <Typography variant="h4" sx={{ fontWeight: 'bold' }}>
+                {baselineDisplay}
+              </Typography>
+              <Typography variant="caption" display="block">
+                Q1 2023 Baseline
+              </Typography>
+            </Card>
+          </Grid>
+          <Grid item xs={12} md={3}>
+            <Card sx={{ p: 2, bgcolor: trend === 'up' ? ndaColors.success + '20' : 
+                                          trend === 'down' ? ndaColors.error + '20' : 
+                                          ndaColors.warning + '20' }}>
+              <Typography variant="subtitle1">Trend</Typography>
+              <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                <Typography variant="h4" sx={{ fontWeight: 'bold', mr: 1 }}>
+                  {renderTrendIcon(kpiData.data)}
+                </Typography>
+                <Typography variant="h6">
+                  {trend === 'up' ? 'Improving' : 
+                   trend === 'down' ? 'Declining' : 'Stable'}
+                </Typography>
+              </Box>
+            </Card>
+          </Grid>
+        </Grid>
+        
+        {renderTimeSeriesChart()}
+        
+        <Card sx={{ p: 2, mb: 2 }}>
+          <Typography variant="h6" gutterBottom>
+            Quarterly Data
+          </Typography>
+          <TableContainer>
+            <Table size="small">
+              <TableHead>
+                <TableRow>
+                  <TableCell>Quarter</TableCell>
+                  <TableCell align="right">Value</TableCell>
+                  <TableCell align="right">Vs Target</TableCell>
+                  <TableCell align="right">Vs Baseline</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {kpiData.data.map((row, index) => (
+                  <TableRow key={row.quarter}>
+                    <TableCell>{row.quarter}</TableCell>
+                    <TableCell align="right">
+                      {isPercentage ? `${row.value}%` : row.value}
+                    </TableCell>
+                    <TableCell align="right" sx={{ 
+                      color: row.value >= kpiData.target ? ndaColors.success : ndaColors.error,
+                      fontWeight: 'bold'
+                    }}>
+                      {isPercentage ? 
+                        `${(row.value - kpiData.target).toFixed(1)}%` : 
+                        (row.value - kpiData.target).toFixed(1)}
+                    </TableCell>
+                    <TableCell align="right" sx={{ 
+                      color: row.value >= kpiData.baseline ? ndaColors.success : ndaColors.error,
+                      fontWeight: 'bold'
+                    }}>
+                      {isPercentage ? 
+                        `${(row.value - kpiData.baseline).toFixed(1)}%` : 
+                        (row.value - kpiData.baseline).toFixed(1)}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        </Card>
+      </Card>
+    );
+  };
+
+  const renderBottleneckAnalysis = () => {
+    const steps = processStepData[activeTab];
+    
+    const chartData = {
+      labels: steps.map(step => step.step),
+      datasets: [
+        {
+          label: 'Actual Days',
+          data: steps.map(step => step.avgDays),
+          backgroundColor: ndaColors.error,
+        },
+        {
+          label: 'Target Days',
+          data: steps.map(step => step.targetDays),
+          backgroundColor: ndaColors.success,
+        }
+      ]
+    };
+
+    return (
+      <Box sx={{ mt: 4 }}>
+        <Typography variant="h5" gutterBottom sx={{ display: 'flex', alignItems: 'center' }}>
+          <Timeline color="primary" sx={{ mr: 1 }} /> Process Step Analysis
+        </Typography>
+        <Typography variant="body1" paragraph>
+          Identify bottlenecks by comparing actual vs target durations for each process step.
+        </Typography>
+        
+        <Card sx={{ p: 2, mb: 3 }}>
+          <Box sx={{ height: 400 }}>
+            <Bar
+              data={chartData}
+              options={{
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                  x: {
+                    stacked: true,
+                  },
+                  y: {
+                    stacked: false,
+                    beginAtZero: true
+                  }
+                }
+              }}
+            />
+          </Box>
+        </Card>
+
+        <TableContainer component={Card}>
+          <Table>
+            <TableHead sx={{ bgcolor: ndaColors.secondary }}>
+              <TableRow>
+                <TableCell sx={{ color: 'white' }}>Process Step</TableCell>
+                <TableCell align="right" sx={{ color: 'white' }}>Avg Days</TableCell>
+                <TableCell align="right" sx={{ color: 'white' }}>Target Days</TableCell>
+                <TableCell align="right" sx={{ color: 'white' }}>Variance</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {steps.map((step) => (
+                <TableRow key={step.step}>
+                  <TableCell>{step.step}</TableCell>
+                  <TableCell align="right">{step.avgDays}</TableCell>
+                  <TableCell align="right">{step.targetDays}</TableCell>
+                  <TableCell align="right" sx={{ 
+                    color: step.avgDays > step.targetDays ? ndaColors.error : ndaColors.success,
+                    fontWeight: 'bold'
+                  }}>
+                    {step.avgDays - step.targetDays > 0 ? '+' : ''}{step.avgDays - step.targetDays}
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </TableContainer>
+      </Box>
+    );
+  };
+
+  const renderSummaryCharts = () => {
+    const currentKpis = Object.keys(quarterlyData[activeTab]);
+    
+    const performanceData = {
+      labels: currentKpis.map(kpi => kpiNameMap[kpi] || kpi),
+      datasets: [
+        {
+          label: 'Current',
+          data: currentKpis.map(kpi => getCurrentValue(kpi)),
+          backgroundColor: ndaColors.primary,
+        },
+        {
+          label: 'Target',
+          data: currentKpis.map(kpi => quarterlyData[activeTab][kpi].target),
+          backgroundColor: ndaColors.secondary,
+        },
+        {
+          label: 'Baseline',
+          data: currentKpis.map(kpi => quarterlyData[activeTab][kpi].baseline),
+          backgroundColor: ndaColors.accent,
+        }
+      ]
+    };
+
+    return (
+      <Box sx={{ mt: 4 }}>
+        <Typography variant="h5" gutterBottom sx={{ display: 'flex', alignItems: 'center' }}>
+          <BarChart color="primary" sx={{ mr: 1 }} /> Overall Performance (Q2 2025)
+        </Typography>
+        
+        <Card sx={{ p: 2, mb: 3 }}>
+          <Box sx={{ height: 400 }}>
+            <Bar
+              data={performanceData}
+              options={{
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                  y: {
+                    beginAtZero: true,
+                    max: 100
+                  }
+                }
+              }}
+            />
+          </Box>
+        </Card>
+      </Box>
+    );
+  };
+
+  return (
+    <Box sx={{ 
+      width: '100%',
+      backgroundColor: ndaColors.background,
+      minHeight: '100vh',
+      p: 3
+    }}>
+      <Card sx={{ 
+        mb: 3,
+        bgcolor: ndaColors.secondary,
+        color: 'white',
+        p: 3,
+        boxShadow: 4
+      }}>
+        <Typography variant="h4" gutterBottom>
+          Uganda National Drug Authority
+        </Typography>
+        <Typography variant="h5">
+          Regulatory Process KPI Dashboard
+        </Typography>
+        <Typography variant="subtitle1" sx={{ mt: 1 }}>
+          Quarterly Performance from Q1 2023 to Q2 2025
+        </Typography>
+      </Card>
+      
+      <Card sx={{ mb: 3 }}>
+        <Tabs 
+          value={activeTab} 
+          onChange={handleTabChange}
+          variant="scrollable"
+          scrollButtons="auto"
+          sx={{
+            '& .MuiTab-root': {
+              color: ndaColors.secondary,
+              fontWeight: 'bold'
+            },
+            '& .Mui-selected': {
+              color: ndaColors.primary,
+            },
+            '& .MuiTabs-indicator': {
+              backgroundColor: ndaColors.primary,
+            }
+          }}
+        >
+          <Tab label="Marketing Authorization" value="MA" icon={<ShowChart />} />
+          <Tab label="Clinical Trials" value="CT" icon={<Timeline />} />
+          <Tab label="GMP Compliance" value="GMP" icon={<PieChart />} />
+        </Tabs>
+      </Card>
+      
+      <Box sx={{ p: 2 }}>
+        <Card sx={{ p: 3, mb: 3 }}>
+          <Typography variant="h5" gutterBottom sx={{ 
+            display: 'flex', 
+            alignItems: 'center',
+            color: ndaColors.secondary
+          }}>
+            {activeTab === 'MA' && 'Marketing Authorization KPIs'}
+            {activeTab === 'CT' && 'Clinical Trials KPIs'}
+            {activeTab === 'GMP' && 'GMP Compliance KPIs'}
+          </Typography>
+          
+          <Grid container spacing={3}>
+            {Object.keys(quarterlyData[activeTab]).map((kpiId) => (
+              <Grid item xs={12} sm={6} md={4} lg={3} key={kpiId}>
+                {renderKpiCard(kpiId)}
+              </Grid>
+            ))}
+          </Grid>
+        </Card>
+        
+        {selectedKpi && renderKpiDetails()}
+        
+        {renderSummaryCharts()}
+        {renderBottleneckAnalysis()}
+      </Box>
+    </Box>
+  );
+};
+
+export default KpiModule;
