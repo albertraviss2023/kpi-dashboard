@@ -381,23 +381,42 @@ def english_summary(counts: Dict[str, int], what: str) -> str:
     total = sum(counts.values())
     if total == 0:
         return f"No {what.lower()} recorded this quarter."
+    
     ok, warn, bad = counts.get("success", 0), counts.get("warning", 0), counts.get("error", 0)
-    p = lambda n: f"{(n/total*100):.0f}%"
-    dominant = max(
-        [("on track", ok, "🟢"), ("at risk", warn, "🟠"), ("off track", bad, "🔴")],
-        key=lambda x: (x[1], {"on track": 3, "at risk": 2, "off track": 1}[x[0]])
-    )
-    dom_label, dom_val, dom_emoji = dominant
-    nudge = (
-        "Great footing—keep up momentum." if dom_label == "on track"
-        else "Watch closely and clear bottlenecks." if dom_label == "at risk"
-        else "Prioritise fixes—these need attention now."
-    )
+    p_ok = (ok/total*100) if total > 0 else 0
+    p_warn = (warn/total*100) if total > 0 else 0
+    p_bad = (bad/total*100) if total > 0 else 0
+    
+    # Determine the dominant status and choose appropriate messaging
+    if p_bad >= 50:
+        # Majority off track - urgent action needed
+        statement = "🚨 **Critical Attention Required** - Majority are off track and require immediate intervention to prevent systemic issues."
+        nudge = "Focus on root cause analysis and rapid corrective actions for the most critical items first."
+    elif p_warn >= 50:
+        # Majority at risk - concerning trend
+        statement = "⚠️ **Elevated Risk** - Most items are at risk of falling behind targets."
+        nudge = "Proactive monitoring and preventive measures needed to stop further deterioration."
+    elif p_ok >= 70:
+        # Strong performance
+        statement = "✅ **Strong Performance** - Strong compliance with targets across most metrics."
+        nudge = "Maintain current processes while addressing the few remaining gaps systematically."
+    elif p_ok >= 50:
+        # Moderate performance
+        statement = "📊 **Moderate Performance** - Meeting targets in key areas with room for improvement."
+        nudge = "Focus on converting 'at risk' items to 'on track' through targeted improvements."
+    else:
+        # Mixed performance - no clear majority
+        if p_bad > p_warn and p_bad > p_ok:
+            statement = "🔶 **Mixed Performance Trending Negative** - Performance is fragmented with concerning off-track trends."
+            nudge = "Address off-track items immediately while stabilizing at-risk areas."
+        else:
+            statement = "🔶 **Mixed Performance** - Performance is distributed across all categories without clear dominance."
+            nudge = "Balanced approach needed: sustain successes while addressing weaknesses."
+
     return (
-        f"{dom_emoji} **Headline:** Most are **{dom_label}** "
-        f"({dom_val}/{total}, {p(dom_val)}).  \n"
-        f"🟢 On track: {ok} ({p(ok)}) • 🟠 At risk: {warn} ({p(warn)}) • 🔴 Off track: {bad} ({p(bad)}).  \n"
-        f"**What it means:** {nudge}"
+        f"{statement}\n\n"
+        f"**Breakdown:** {ok}/{total} on track ({p_ok:.0f}%) • {warn}/{total} at risk ({p_warn:.0f}%) • {bad}/{total} off track ({p_bad:.0f}%)\n\n"
+        f"**Recommendation:** {nudge}"
     )
 
 # =======================
