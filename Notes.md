@@ -9,4 +9,4 @@ pip install seaborn
 pip install streamlit pyarrow pandas numpy plotly
 
 ## Run
-streamlit run streamlit_kpi_dashboard_d.py
+streamlit run stream_kpi_dash_g2.py
