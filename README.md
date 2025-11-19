@@ -206,7 +206,7 @@ Core (overall) KPIs:
 7. **Median Turnaround Time (Days)**
 8. **% of Inspection Reports Published On Time**
 
-Disaggregated views (selected examples):
+Disaggregated views (Thes should come directly from the data.):
 
 - On-site Domestic vs On-site Foreign
 - Reliance / Joint On-site Foreign
