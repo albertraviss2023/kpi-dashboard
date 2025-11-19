@@ -305,7 +305,7 @@ For production, you should:
 
 ---
 
-## 7. Self-Service Analytics: What You Can Explore
+## 7. Self-Service Analytics: What we are exploring -- When time comes best to have back and forth with teams to tailor these to user needs. 
 
 The **Self-Service Analytics** section turns the dashboard into an exploratory tool for KPI and process performance. Please note that this is just to demo the idea but the real curated list of SS analytics would have to be tailored to specific user requirements. 
 
